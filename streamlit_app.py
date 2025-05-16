@@ -40,37 +40,40 @@ selected_features = [
 # This prevents reloading and reprocessing the data every time the script reruns
 @st.cache_data
 def load_and_preprocess_data():
-    # --- IMPORTANT: Replace with the actual URLs to your raw CSV files in GitHub ---
-    # Assuming your files are in a 'data' folder in the root of your repo
-    # Example: https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/data/constant_jammer_gaussian_10db.csv
-    # You need to list ALL your CSV file URLs here
-    file_urls = [
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/constant_jammer_gaussian_10db.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/constant_jammer_gaussian_20db.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/constant_jammer_gaussian_25db.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/constant_jammer_gaussian_dynamic_gain.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/constant_jammer_pulse_20db.csv', # Add all your files
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/constant_jammer_triangle_20db.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/data_benign_1.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/data_benign_2.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/data_benign_3.csv',
-        'hhttps://github.com/panitsasi/JamShield-Dataset/blob/main/data/data_benign_4.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/random_jammer_cos_dynamic_gain.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/random_jammer_gaussian_NLOS.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/random_jammer_pulse_dynamic_gain.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/random_jammer_saw_tooth_dynamic_gain.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/random_jammer_triangle_dynamic_gain.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/reactive_jammer_cos_NLOS.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/reactive_jammer_gaussian_LOS.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/reactive_jammer_gaussian_additional_en.csv', # Check this name
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/data/reactive_jammer_square_NLOS.csv',
-        'https://github.com/panitsasi/JamShield-Dataset/blob/main/dataa/reactive_jammer_triangle_NLOS.csv', # Check this name
-        # Add any other CSV files from your dataset
+    # --- ACTUAL RAW URLs to your CSV files in GitHub ---
+    # Constructed based on the first URL provided and the filenames from your repo
+    base_url = 'https://raw.githubusercontent.com/panitsasi/JamShield-Dataset/refs/heads/main/data/'
+    file_names = [
+        'constant_jammer_gaussian_10db.csv',
+        'constant_jammer_gaussian_20db.csv',
+        'constant_jammer_gaussian_25db.csv',
+        'constant_jammer_gaussian_dynamic_gain.csv',
+        'constant_jammer_pulse_20db.csv',
+        'constant_jammer_triangle_20db.csv',
+        'data_benign_1.csv',
+        'data_benign_2.csv',
+        'data_benign_3.csv',
+        'data_benign_4.csv',
+        'random_jammer_cos_dynamic_gain.csv',
+        'random_jammer_gaussian_NLOS.csv',
+        'random_jammer_pulse_dynamic_gain.csv',
+        'random_jammer_saw_tooth_dynamic_gain.csv',
+        'random_jammer_triangle_dynamic_gain.csv',
+        'reactive_jammer_cos_NLOS.csv',
+        'reactive_jammer_gaussian_LOS.csv',
+        'reactive_jammer_gaussian_additional_en.csv', # Check this name if still causing issues
+        'reactive_jammer_square_NLOS.csv',
+        'reactive_jammer_triangle_NLOS.csv', # Check this name if still causing issues
+        # Add any other CSV filenames from your dataset here
     ]
+
+    file_urls = [base_url + name for name in file_names]
+
 
     all_data = []
     for url in file_urls:
         try:
+            # Use the raw URL to read the CSV directly
             df = pd.read_csv(url)
             # Extract label from URL (assuming filename is the last part of the URL)
             label = url.split('/')[-1].replace('.csv', '')
@@ -79,11 +82,12 @@ def load_and_preprocess_data():
                 all_data.append(df)
         except Exception as e:
             st.error(f"Error loading data from {url}: {e}")
-            return None, None, None # Return None if data loading fails
+            # If any file fails, we return None to indicate failure
+            return None, None, None, None # Added imputer to return None
 
     if not all_data:
         st.error("No data loaded from the provided URLs.")
-        return None, None, None
+        return None, None, None, None # Added imputer to return None
 
     combined_df = pd.concat(all_data, ignore_index=True)
 
@@ -104,8 +108,14 @@ def load_and_preprocess_data():
 
 # Load and preprocess the data
 data_load_state = st.info("Loading data...")
-X, y_encoded, label_encoder, imputer = load_and_preprocess_data()
-data_load_state.empty() # Clear the loading message
+# Catch potential errors during data loading
+try:
+    X, y_encoded, label_encoder, imputer = load_and_preprocess_data()
+    data_load_state.empty() # Clear the loading message
+except Exception as e:
+    data_load_state.error(f"An error occurred during data loading: {e}")
+    X, y_encoded, label_encoder, imputer = None, None, None, None # Set to None on error
+
 
 # Check if data loaded successfully
 if X is not None and y_encoded is not None and label_encoder is not None and imputer is not None:
