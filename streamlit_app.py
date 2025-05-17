@@ -68,11 +68,11 @@ def load_and_preprocess_data():
                 all_data.append(df)
         except Exception as e:
             st.error(f"Error loading data from {url}: {e}")
-            return None, None, None, None, None # Added stats_df to return None
+            return None, None, None, None, None
 
     if not all_data:
         st.error("No data loaded from the provided URLs.")
-        return None, None, None, None, None # Added stats_df to return None
+        return None, None, None, None, None
 
     combined_df = pd.concat(all_data, ignore_index=True)
 
@@ -80,10 +80,8 @@ def load_and_preprocess_data():
     y = combined_df['label']
 
     # Calculate feature statistics for slider ranges
-    stats_df = X.describe().loc[['min', 'max', '50%']].transpose() # Using 50% for median
-    # Ensure statistics are in a format suitable for slider bounds
-    # Convert to float, handle potential infinites or NaNs from describe()
-    stats_df = stats_df.replace([np.inf, -np.inf], np.nan).fillna(0) # Replace inf with NaN and fill NaN with 0
+    stats_df = X.describe().loc[['min', 'max', '50%']].transpose()
+    stats_df = stats_df.replace([np.inf, -np.inf], np.nan).fillna(0)
 
     imputer = SimpleImputer(strategy='median')
     X_imputed = imputer.fit_transform(X)
@@ -92,7 +90,7 @@ def load_and_preprocess_data():
     label_encoder = LabelEncoder()
     y_encoded = label_encoder.fit_transform(y)
 
-    return X, y_encoded, label_encoder, imputer, stats_df # Return stats_df
+    return X, y_encoded, label_encoder, imputer, stats_df
 
 # Load and preprocess the data, and get feature statistics
 data_load_state = st.info("Loading data and preprocessing...")
@@ -161,18 +159,16 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
         st.write("Ranges based on training data statistics.")
 
         input_data = {}
+        default_values = {feature: 0.0 for feature in selected_features}
 
         for feature in selected_features:
-            # Get min, max, and median from the calculated statistics
             min_val = float(stats_df.loc[feature, 'min'])
             max_val = float(stats_df.loc[feature, 'max'])
             median_val = float(stats_df.loc[feature, '50%'])
 
-            # Handle cases where min == max (e.g., feature is constant)
             if min_val == max_val:
                  input_data[feature] = st.number_input(f"{feature}", value=min_val, key=f"sidebar_input_{feature}")
             else:
-                 # Use st.slider with calculated ranges and median as default value
                  input_data[feature] = st.slider(f"{feature}",
                                                   min_value=min_val,
                                                   max_value=max_val,
@@ -180,7 +176,7 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
                                                   key=f"sidebar_input_{feature}")
 
 
-    # --- Prediction Button (Can be in main area or sidebar) ---
+    # --- Prediction Button ---
     st.header("Get Prediction")
     if st.button("Predict Activity"):
         # --- Prepare Input Data for Prediction ---
@@ -188,19 +184,33 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
         input_df = input_df[selected_features]
 
         # Apply the same imputation used during training
-        # Note: Imputer fitted on training data handles seen values.
-        # If a completely new value range appears in input, it would still use train median.
         input_imputed = imputer.transform(input_df)
         input_processed_df = pd.DataFrame(input_imputed, columns=selected_features)
 
         # --- Make Prediction ---
         prediction_encoded = rf_model.predict(input_processed_df)
-        predicted_label = label_encoder.inverse_transform(prediction_encoded)
+        predicted_label_raw = label_encoder.inverse_transform(prediction_encoded)[0] # Get the raw string label
 
-        # --- Display Prediction ---
+        # --- Beautify and Display Prediction ---
         st.subheader("Prediction Result")
-        st.success(f"Predicted Activity: **{predicted_label[0]}**")
+
+        # Format the label string: replace underscores with spaces and capitalize words
+        formatted_label = predicted_label_raw.replace('_', ' ').title()
+
+        if 'Benign' in formatted_label:
+            st.success(f"Predicted Activity: **{formatted_label}** ✅")
+            st.info("The model predicts normal, non-jammed network activity.")
+        else:
+            st.warning(f"Predicted Activity: **{formatted_label}** 🚨")
+            st.info(f"The model predicts a jamming attack of type: **{formatted_label}**.")
+
+        # Optional: Display prediction probabilities (useful for understanding confidence)
+        # prediction_proba = rf_model.predict_proba(input_processed_df)
+        # proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
+        # st.write("Prediction Probabilities:")
+        # st.dataframe(proba_df)
 
 
 else:
     st.error("App could not load data or train the model. Please check the data URLs and file format.")
+
