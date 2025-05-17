@@ -204,11 +204,11 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
             st.warning(f"Predicted Activity: **{formatted_label}** 🚨")
             st.info(f"The model predicts a jamming attack of type: **{formatted_label}**.")
 
-        # Optional: Display prediction probabilities (useful for understanding confidence)
-        # prediction_proba = rf_model.predict_proba(input_processed_df)
-        # proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
-        # st.write("Prediction Probabilities:")
-        # st.dataframe(proba_df)
+       
+        prediction_proba = rf_model.predict_proba(input_processed_df)
+        proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
+        st.write("Prediction Probabilities:")
+        st.dataframe(proba_df)
 
 
 else:
