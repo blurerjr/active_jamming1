@@ -19,21 +19,11 @@ selected_features = [
     "tx_total_bytes",
     "tx_ucast_pkts",
     "tx_ucast_bytes",
-    "tx_failures",
     "rx_data_pkts",
     "rx_ucast_pkts",
     "rx_data_bytes",
-    "tx_data_pkts_retried",
-    "tx_total_pkts_sent",
     "tx_pkts_retries",
     "tx_pkts_retry_exhausted",
-    "rate_last_tx_pkt_min",
-    "rate_last_tx_pkt_max",
-    "per_antenna_rssi_last_rx_data_frame_1",
-    "per_antenna_rssi_last_rx_data_frame_2",
-    "per_antenna_avg_rssi_rx_data_frames_1",
-    "per_antenna_avg_rssi_rx_data_frames_2",
-    "sinr_per_antenna_1",
     "per_antenna_noise_floor_1"
 ]
 
