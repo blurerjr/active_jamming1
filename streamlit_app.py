@@ -106,12 +106,13 @@ except Exception as e:
 if X is not None and y_encoded is not None and label_encoder is not None and imputer is not None and stats_df is not None:
 
     st.title("🤖 Jamming Attack Detector")
-    st.write("Use the sidebar to enter the feature values and predict the type of activity.")
+    st.info("This App Detect a Potential Jamming Attack in Networks")
+    st.write("**Use the sidebar to enter the feature values and predict the type of activity.**")
 
     # --- Optional: Display Raw Data ---
     with st.expander('Show Raw Data (from GitHub)'):
-        st.write("This is the combined raw data loaded from your GitHub repository.")
-        st.dataframe(X.head())
+        st.write("This is the combined raw data loaded from GitHub repository.")
+        st.dataframe(X.head(10))
         st.write("Label counts:")
         st.write(pd.Series(label_encoder.inverse_transform(y_encoded)).value_counts())
 
