@@ -13,7 +13,7 @@ import seaborn as sns
 # --- Configuration ---
 st.set_page_config(page_title="Jamming Attack Detector", layout="wide")
 
-# Define the list of your 20 selected features
+# Define the list of your selected features (Top 10 based on importance)
 selected_features = [
     "tx_total_pkts",
     "tx_total_bytes",
@@ -68,16 +68,22 @@ def load_and_preprocess_data():
                 all_data.append(df)
         except Exception as e:
             st.error(f"Error loading data from {url}: {e}")
-            return None, None, None, None
+            return None, None, None, None, None # Added stats_df to return None
 
     if not all_data:
         st.error("No data loaded from the provided URLs.")
-        return None, None, None, None
+        return None, None, None, None, None # Added stats_df to return None
 
     combined_df = pd.concat(all_data, ignore_index=True)
 
     X = combined_df[selected_features]
     y = combined_df['label']
+
+    # Calculate feature statistics for slider ranges
+    stats_df = X.describe().loc[['min', 'max', '50%']].transpose() # Using 50% for median
+    # Ensure statistics are in a format suitable for slider bounds
+    # Convert to float, handle potential infinites or NaNs from describe()
+    stats_df = stats_df.replace([np.inf, -np.inf], np.nan).fillna(0) # Replace inf with NaN and fill NaN with 0
 
     imputer = SimpleImputer(strategy='median')
     X_imputed = imputer.fit_transform(X)
@@ -86,20 +92,20 @@ def load_and_preprocess_data():
     label_encoder = LabelEncoder()
     y_encoded = label_encoder.fit_transform(y)
 
-    return X, y_encoded, label_encoder, imputer
+    return X, y_encoded, label_encoder, imputer, stats_df # Return stats_df
 
-# Load and preprocess the data
+# Load and preprocess the data, and get feature statistics
 data_load_state = st.info("Loading data and preprocessing...")
 try:
-    X, y_encoded, label_encoder, imputer = load_and_preprocess_data()
+    X, y_encoded, label_encoder, imputer, stats_df = load_and_preprocess_data()
     data_load_state.empty()
 except Exception as e:
     data_load_state.error(f"An error occurred during data loading and preprocessing: {e}")
-    X, y_encoded, label_encoder, imputer = None, None, None, None
+    X, y_encoded, label_encoder, imputer, stats_df = None, None, None, None, None
 
 
 # Check if data loaded successfully
-if X is not None and y_encoded is not None and label_encoder is not None and imputer is not None:
+if X is not None and y_encoded is not None and label_encoder is not None and imputer is not None and stats_df is not None:
 
     st.title("🤖 Jamming Attack Detector")
     st.write("Use the sidebar to enter the feature values and predict the type of activity.")
@@ -128,49 +134,53 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
     st.header("Feature Importance")
     st.write("Shows which features the model considers most important for classification.")
 
-    importances = rf_model.feature_importances_
-    feature_names = X.columns
-    feature_importance_df = pd.DataFrame({'feature': feature_names, 'importance': importances})
-    feature_importance_df = feature_importance_df.sort_values('importance', ascending=False)
+    if list(X.columns) == selected_features:
+        importances = rf_model.feature_importances_
+        feature_names = X.columns
+        feature_importance_df = pd.DataFrame({'feature': feature_names, 'importance': importances})
+        feature_importance_df = feature_importance_df.sort_values('importance', ascending=False)
 
-    st.dataframe(feature_importance_df, hide_index=True)
+        st.dataframe(feature_importance_df, hide_index=True)
 
-    st.subheader("Feature Importance Bar Chart")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x='importance', y='feature', data=feature_importance_df, ax=ax)
-    ax.set_title('Feature Importance from Random Forest')
-    ax.set_xlabel('Importance')
-    ax.set_ylabel('Feature')
-    plt.tight_layout()
-    st.pyplot(fig)
+        st.subheader("Feature Importance Bar Chart")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(x='importance', y='feature', data=feature_importance_df, ax=ax)
+        ax.set_title('Feature Importance from Random Forest')
+        ax.set_xlabel('Importance')
+        ax.set_ylabel('Feature')
+        plt.tight_layout()
+        st.pyplot(fig)
+    else:
+        st.warning("Feature names used for training do not match the selected features list.")
 
 
-    # --- Input Features Section (Moved to Sidebar) ---
+    # --- Input Features Section (Moved to Sidebar, Using Sliders) ---
     with st.sidebar:
         st.header("Input Features")
         st.write("Adjust the values below to get a prediction.")
+        st.write("Ranges based on training data statistics.")
 
         input_data = {}
-        # Create a dictionary to hold default values.
-        # You could potentially calculate min/max/median from your training data (X)
-        # to set more meaningful default values or slider ranges.
-        default_values = {feature: 0.0 for feature in selected_features} # Using 0.0 as a simple default
 
-        # Using number_input for flexibility, as ranges are not explicitly known
-        # If you know the typical range for a feature, st.slider is often better
         for feature in selected_features:
-             # Example of using st.slider if you knew the range:
-             # if feature == 'tx_total_pkts':
-             #     input_data[feature] = st.slider(f"{feature}", 0, 10000, default_values[feature])
-             # else:
-             #     input_data[feature] = st.number_input(f"{feature}", value=default_values[feature], key=f"sidebar_input_{feature}")
+            # Get min, max, and median from the calculated statistics
+            min_val = float(stats_df.loc[feature, 'min'])
+            max_val = float(stats_df.loc[feature, 'max'])
+            median_val = float(stats_df.loc[feature, '50%'])
 
-             # Using number_input for all features
-             input_data[feature] = st.number_input(f"{feature}", value=default_values[feature], key=f"sidebar_input_{feature}")
+            # Handle cases where min == max (e.g., feature is constant)
+            if min_val == max_val:
+                 input_data[feature] = st.number_input(f"{feature}", value=min_val, key=f"sidebar_input_{feature}")
+            else:
+                 # Use st.slider with calculated ranges and median as default value
+                 input_data[feature] = st.slider(f"{feature}",
+                                                  min_value=min_val,
+                                                  max_value=max_val,
+                                                  value=median_val,
+                                                  key=f"sidebar_input_{feature}")
 
 
     # --- Prediction Button (Can be in main area or sidebar) ---
-    # Placing the button in the main area for visibility after inputs are set
     st.header("Get Prediction")
     if st.button("Predict Activity"):
         # --- Prepare Input Data for Prediction ---
@@ -178,6 +188,8 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
         input_df = input_df[selected_features]
 
         # Apply the same imputation used during training
+        # Note: Imputer fitted on training data handles seen values.
+        # If a completely new value range appears in input, it would still use train median.
         input_imputed = imputer.transform(input_df)
         input_processed_df = pd.DataFrame(input_imputed, columns=selected_features)
 
@@ -192,4 +204,3 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
 
 else:
     st.error("App could not load data or train the model. Please check the data URLs and file format.")
-
