@@ -176,7 +176,7 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
                                                   key=f"sidebar_input_{feature}")
 
         # --- Prediction Button (Moved to Sidebar) ---
-        st.header("   **Detect attack**  ") # Moved header to sidebar
+        st.header("   **Detect Attack**  ") # Moved header to sidebar
         st.info("Use below button to detect attack in the above input network")
         if st.button("Detect Activity"):
             # --- Prepare Input Data for Prediction ---
@@ -201,7 +201,7 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
             else:
                 st.warning(f"Detected Activity: **{formatted_label}** 🚨")
                 st.info(f"The model detects a jamming attack of type: **{formatted_label}**.")
-                st.info("Proceed accordingly to eleminate the attack")
+                st.info("Proceed accordingly to neutralize the attack")
 
             # Optional: Display prediction probabilities
             # prediction_proba = rf_model.predict_proba(input_processed_df)
