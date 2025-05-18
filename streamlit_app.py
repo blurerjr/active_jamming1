@@ -176,8 +176,8 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
                                                   key=f"sidebar_input_{feature}")
 
         # --- Prediction Button (Moved to Sidebar) ---
-        st.header("Detect attack") # Moved header to sidebar
-        st.info("use below button to detect attack in the above input network")
+        st.header("   **Detect attack**  ") # Moved header to sidebar
+        st.info("Use below button to detect attack in the above input network")
         if st.button("Detect Activity"):
             # --- Prepare Input Data for Prediction ---
             input_df = pd.DataFrame([input_data])
