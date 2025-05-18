@@ -106,13 +106,12 @@ except Exception as e:
 if X is not None and y_encoded is not None and label_encoder is not None and imputer is not None and stats_df is not None:
 
     st.title("🤖 Jamming Attack Detector")
-    st.info("This App Detect a Potential Jamming Attack in Networks")
-    st.write("**Use the sidebar to enter the feature values and predict the type of activity.**")
+    st.write("Use the sidebar to enter the feature values and predict the type of activity.")
 
     # --- Optional: Display Raw Data ---
     with st.expander('Show Raw Data (from GitHub)'):
-        st.write("This is the combined raw data loaded from GitHub repository.")
-        st.dataframe(X.head(10))
+        st.write("This is the combined raw data loaded from your GitHub repository.")
+        st.dataframe(X.head())
         st.write("Label counts:")
         st.write(pd.Series(label_encoder.inverse_transform(y_encoded)).value_counts())
 
@@ -176,10 +175,15 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
                                                   value=median_val,
                                                   key=f"sidebar_input_{feature}")
 
+        # --- Prediction Button (Remains in Sidebar) ---
+        st.header("Get Prediction")
+        predict_button_clicked = st.button("Predict Activity")
 
-    # --- Prediction Button ---
-    st.header("Get Prediction")
-    if st.button("Predict Activity"):
+
+    # --- Prediction Result Display (Moved to Main Area) ---
+    # This block will execute and display the result in the main area
+    # when the predict_button_clicked variable is True (i.e., button was clicked)
+    if predict_button_clicked:
         # --- Prepare Input Data for Prediction ---
         input_df = pd.DataFrame([input_data])
         input_df = input_df[selected_features]
@@ -190,12 +194,10 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
 
         # --- Make Prediction ---
         prediction_encoded = rf_model.predict(input_processed_df)
-        predicted_label_raw = label_encoder.inverse_transform(prediction_encoded)[0] # Get the raw string label
+        predicted_label_raw = label_encoder.inverse_transform(prediction_encoded)[0]
 
         # --- Beautify and Display Prediction ---
         st.subheader("Prediction Result")
-
-        # Format the label string: replace underscores with spaces and capitalize words
         formatted_label = predicted_label_raw.replace('_', ' ').title()
 
         if 'Benign' in formatted_label:
@@ -205,11 +207,11 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
             st.warning(f"Predicted Activity: **{formatted_label}** 🚨")
             st.info(f"The model predicts a jamming attack of type: **{formatted_label}**.")
 
-       
-        prediction_proba = rf_model.predict_proba(input_processed_df)
-        proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
-        st.write("Prediction Probabilities:")
-        st.dataframe(proba_df)
+        # Optional: Display prediction probabilities
+        # prediction_proba = rf_model.predict_proba(input_processed_df)
+        # proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
+        # st.write("Prediction Probabilities:")
+        # st.dataframe(proba_df)
 
 
 else:
