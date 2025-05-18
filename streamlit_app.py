@@ -176,8 +176,9 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
                                                   key=f"sidebar_input_{feature}")
 
         # --- Prediction Button (Moved to Sidebar) ---
-        st.header("Get Prediction") # Moved header to sidebar
-        if st.button("Predict Activity"):
+        st.header("Detect attack") # Moved header to sidebar
+        st.info("use below button to detect attack in the above input network")
+        if st.button("Detect Activity"):
             # --- Prepare Input Data for Prediction ---
             input_df = pd.DataFrame([input_data])
             input_df = input_df[selected_features]
@@ -191,15 +192,16 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
             predicted_label_raw = label_encoder.inverse_transform(prediction_encoded)[0]
 
             # --- Beautify and Display Prediction (Moved to Sidebar, inside the button block) ---
-            st.subheader("Prediction Result") # Subheader inside the button block
+            st.subheader("Detection Result") # Subheader inside the button block
             formatted_label = predicted_label_raw.replace('_', ' ').title()
 
             if 'Benign' in formatted_label:
-                st.success(f"Predicted Activity: **{formatted_label}** ✅")
-                st.info("The model predicts normal, non-jammed network activity.")
+                st.success(f"Detected Activity: **{formatted_label}** ✅")
+                st.info("The model detect normal, non-jammed network activity.")
             else:
-                st.warning(f"Predicted Activity: **{formatted_label}** 🚨")
-                st.info(f"The model predicts a jamming attack of type: **{formatted_label}**.")
+                st.warning(f"Detected Activity: **{formatted_label}** 🚨")
+                st.info(f"The model detects a jamming attack of type: **{formatted_label}**.")
+                st.info("Proceed accordingly to eleminate the attack")
 
             # Optional: Display prediction probabilities
             # prediction_proba = rf_model.predict_proba(input_processed_df)
