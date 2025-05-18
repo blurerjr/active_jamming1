@@ -175,43 +175,37 @@ if X is not None and y_encoded is not None and label_encoder is not None and imp
                                                   value=median_val,
                                                   key=f"sidebar_input_{feature}")
 
-        # --- Prediction Button (Remains in Sidebar) ---
-        st.header("Get Prediction")
-        predict_button_clicked = st.button("Predict Activity")
+        # --- Prediction Button (Moved to Sidebar) ---
+        st.header("Get Prediction") # Moved header to sidebar
+        if st.button("Predict Activity"):
+            # --- Prepare Input Data for Prediction ---
+            input_df = pd.DataFrame([input_data])
+            input_df = input_df[selected_features]
 
+            # Apply the same imputation used during training
+            input_imputed = imputer.transform(input_df)
+            input_processed_df = pd.DataFrame(input_imputed, columns=selected_features)
 
-    # --- Prediction Result Display (Moved to Main Area) ---
-    # This block will execute and display the result in the main area
-    # when the predict_button_clicked variable is True (i.e., button was clicked)
-    if predict_button_clicked:
-        # --- Prepare Input Data for Prediction ---
-        input_df = pd.DataFrame([input_data])
-        input_df = input_df[selected_features]
+            # --- Make Prediction ---
+            prediction_encoded = rf_model.predict(input_processed_df)
+            predicted_label_raw = label_encoder.inverse_transform(prediction_encoded)[0]
 
-        # Apply the same imputation used during training
-        input_imputed = imputer.transform(input_df)
-        input_processed_df = pd.DataFrame(input_imputed, columns=selected_features)
+            # --- Beautify and Display Prediction (Moved to Sidebar, inside the button block) ---
+            st.subheader("Prediction Result") # Subheader inside the button block
+            formatted_label = predicted_label_raw.replace('_', ' ').title()
 
-        # --- Make Prediction ---
-        prediction_encoded = rf_model.predict(input_processed_df)
-        predicted_label_raw = label_encoder.inverse_transform(prediction_encoded)[0]
+            if 'Benign' in formatted_label:
+                st.success(f"Predicted Activity: **{formatted_label}** ✅")
+                st.info("The model predicts normal, non-jammed network activity.")
+            else:
+                st.warning(f"Predicted Activity: **{formatted_label}** 🚨")
+                st.info(f"The model predicts a jamming attack of type: **{formatted_label}**.")
 
-        # --- Beautify and Display Prediction ---
-        st.subheader("Prediction Result")
-        formatted_label = predicted_label_raw.replace('_', ' ').title()
-
-        if 'Benign' in formatted_label:
-            st.success(f"Predicted Activity: **{formatted_label}** ✅")
-            st.info("The model predicts normal, non-jammed network activity.")
-        else:
-            st.warning(f"Predicted Activity: **{formatted_label}** 🚨")
-            st.info(f"The model predicts a jamming attack of type: **{formatted_label}**.")
-
-        # Optional: Display prediction probabilities
-        # prediction_proba = rf_model.predict_proba(input_processed_df)
-        # proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
-        # st.write("Prediction Probabilities:")
-        # st.dataframe(proba_df)
+            # Optional: Display prediction probabilities
+            # prediction_proba = rf_model.predict_proba(input_processed_df)
+            # proba_df = pd.DataFrame(prediction_proba, columns=label_encoder.classes_)
+            # st.write("Prediction Probabilities:")
+            # st.dataframe(proba_df)
 
 
 else:
